@@ -5830,19 +5830,11 @@ function buildSegmentHtml(seg, index = 0, route = null) {
 
   const bg     = seg.lineColor + '20';
   const border = seg.lineColor + '55';
-  const rawFare = seg.stationIds[0]?.startsWith('sz')
-    ? szMetroFare(stops) : hkMtrFare(stops);
-  const fareValue = seg.lineId === 'hsr'
-    ? Number(seg.fare || 0)
-    : rawFare;
-  const fareStr = `· ${fmtHKD(fareValue)}`;
-
   return `<div class="segment-row" title="${hoverText}">
     <div class="segment-header">
       <span class="seg-badge" style="background:${bg};border:1px solid ${border};color:${seg.lineColor}">${seg.lineId.toUpperCase()}</span>
       <span class="seg-line-name">${seg.lineName}</span>
       <span class="seg-meta">${stops} stop${stops !== 1 ? 's' : ''}</span>
-      <span class="seg-fare">${fareStr}</span>
     </div>
     <div class="seg-stops">${stopsStr}</div>
   </div>`;
