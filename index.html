@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ROUTE // HK · SZ</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <!-- App styles -->
+  <link rel="stylesheet" href="assets/css/main.css" />
+</head>
+<body>
+
+<!-- MAP -->
+<div id="map"></div>
+
+<!-- HEADER -->
+<div id="header">
+  <div class="hdr-logo">ROUTE</div>
+  <div class="hdr-sep"></div>
+  <div class="hdr-sub">HK · SZ Transit</div>
+  <div class="hdr-spacer"></div>
+  <div class="hdr-dot"></div>
+  <div class="hdr-pill">Live Routing</div>
+</div>
+
+<!-- LEFT PANEL -->
+<div id="panel">
+  <div class="panel-scroll">
+
+    <!-- JOURNEY PLANNER -->
+    <div class="panel-section">
+      <div class="panel-label">Plan Your Journey</div>
+
+      <div class="ac-wrap" id="origin-wrap">
+        <div class="loc-group" id="loc-group">
+          <!-- Origin row -->
+          <div class="loc-row" id="origin-row">
+            <div class="loc-dot origin"></div>
+            <input
+              class="loc-input"
+              id="origin-input"
+              type="text"
+              placeholder="From — station or address"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <button class="loc-clear hidden" id="origin-clear" tabindex="-1" aria-label="Clear origin">✕</button>
+          </div>
+          <div class="loc-connector"></div>
+          <!-- Dest row -->
+          <div class="loc-row" id="dest-row">
+            <div class="loc-dot dest"></div>
+            <input
+              class="loc-input"
+              id="dest-input"
+              type="text"
+              placeholder="To — station or address"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <button class="loc-clear hidden" id="dest-clear" tabindex="-1" aria-label="Clear destination">✕</button>
+          </div>
+          <!-- Swap -->
+          <button class="swap-btn" id="swap-btn" title="Swap origin and destination" aria-label="Swap">⇅</button>
+        </div>
+
+        <!-- Origin dropdown -->
+        <div class="ac-dropdown" id="origin-ac"></div>
+        <!-- Dest dropdown -->
+        <div class="ac-dropdown" id="dest-ac"></div>
+      </div>
+
+      <!-- Mode options -->
+      <div class="opts-row">
+        <button class="opt-chip active" data-mode="all">⚡ All</button>
+        <button class="opt-chip" data-mode="mtr">🚇 MTR</button>
+        <button class="opt-chip" data-mode="taxi">🚕 Taxi</button>
+        <button class="opt-chip" data-mode="bus">🚌 Bus</button>
+      </div>
+
+      <!-- Search button -->
+      <button class="search-btn" id="search-btn" disabled>
+        <span id="btn-label">FIND ROUTES</span>
+      </button>
+    </div>
+
+    <div class="panel-div"></div>
+
+    <!-- INFO TILES -->
+    <div class="info-tiles">
+      <div class="info-tile">
+        <div class="info-tile-label">Crossings</div>
+        <div class="info-tile-val">3</div>
+        <div class="info-tile-sub">Rail + ferry</div>
+      </div>
+      <div class="info-tile">
+        <div class="info-tile-label">Coverage</div>
+        <div class="info-tile-val">HK+SZ</div>
+        <div class="info-tile-sub">Dual city</div>
+      </div>
+      <div class="info-tile">
+        <div class="info-tile-label">Routing</div>
+        <div class="info-tile-val">LIVE</div>
+        <div class="info-tile-sub">OSRM + OSM</div>
+      </div>
+    </div>
+
+    <!-- CROSSINGS -->
+    <div class="crossings-section">
+      <div class="crossings-title">Border Crossings — Quick Select</div>
+
+      <div class="crossing-item" onclick="App.selectCrossing('lo_wu')">
+        <div class="crossing-icon">🚆</div>
+        <div class="crossing-text">
+          <div class="crossing-name">Lo Wu / 罗湖 Luohu</div>
+          <div class="crossing-sub">MTR East Rail ↔ SZ Metro Line 1</div>
+        </div>
+        <div class="crossing-status open">Open</div>
+      </div>
+
+      <div class="crossing-item" onclick="App.selectCrossing('lok_ma_chau')">
+        <div class="crossing-icon">🚆</div>
+        <div class="crossing-text">
+          <div class="crossing-name">Lok Ma Chau / 福田口岸 Futian</div>
+          <div class="crossing-sub">MTR East Rail ↔ SZ Metro Line 4</div>
+        </div>
+        <div class="crossing-status open">Open</div>
+      </div>
+
+      <div class="crossing-item" onclick="App.selectCrossing('hung_hom_ferry')">
+        <div class="crossing-icon">⛴</div>
+        <div class="crossing-text">
+          <div class="crossing-name">Hung Hom Ferry Terminal</div>
+          <div class="crossing-sub">Ferry to China Merchants Wharf, SZ</div>
+        </div>
+        <div class="crossing-status limited">Limited</div>
+      </div>
+    </div>
+
+    <div class="hsr-section">
+      <div class="crossings-title">HSR Quick Timetable</div>
+      <div class="hsr-card">
+        <div class="hsr-card-head">
+          <div class="hsr-card-title">West Kowloon ↔ Shenzhen</div>
+          <button class="hsr-mode-btn" id="hsr-mode-btn" type="button" aria-pressed="false">HSR</button>
+        </div>
+        <div class="hsr-card-note">Valid from 15 Apr 2026 · Add 25 min station processing · boarding closes 4 min before departure</div>
+
+        <div class="hsr-row">
+          <div class="hsr-route">West Kowloon → Futian</div>
+          <div class="hsr-times">First 07:07 · Last 23:00</div>
+        </div>
+        <div class="hsr-row">
+          <div class="hsr-route">West Kowloon → Shenzhen North</div>
+          <div class="hsr-times">First 07:01 · Last 23:00</div>
+        </div>
+        <div class="hsr-row">
+          <div class="hsr-route">Futian → West Kowloon</div>
+          <div class="hsr-times">First 06:42 · Last 22:26</div>
+        </div>
+        <div class="hsr-row">
+          <div class="hsr-route">Shenzhen North → West Kowloon</div>
+          <div class="hsr-times">First 06:32 · Last 22:16</div>
+        </div>
+
+        <div class="hsr-links">
+          <a class="hsr-link" href="https://www.highspeed.mtr.com.hk/res/pdf/short-haul-train-timetable.pdf" target="_blank" rel="noopener noreferrer">Short-haul PDF</a>
+          <a class="hsr-link" href="https://www.highspeed.mtr.com.hk/res/pdf/long-haul-train-timetable.pdf" target="_blank" rel="noopener noreferrer">Long-haul PDF</a>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /panel-scroll -->
+</div><!-- /panel -->
+
+<!-- RESULTS DRAWER -->
+<div id="drawer">
+  <div class="drawer-header">
+    <div class="drawer-title">ROUTES</div>
+    <div class="drawer-count" id="drawer-count"></div>
+    <div class="drawer-header-right">
+      <button class="drawer-close" id="drawer-close" aria-label="Close">✕</button>
+    </div>
+  </div>
+  <div class="filter-tabs" id="filter-tabs">
+    <button class="filter-tab active" data-filter="all">All</button>
+    <button class="filter-tab" data-filter="cheapest">Cheapest</button>
+    <button class="filter-tab" data-filter="balanced">Balanced</button>
+    <button class="filter-tab" data-filter="fastest">Fastest</button>
+    <button class="filter-tab" data-filter="mtr">MTR / Metro</button>
+    <button class="filter-tab" data-filter="bus">Bus</button>
+    <button class="filter-tab" data-filter="taxi">Taxi</button>
+  </div>
+  <div class="routes-list" id="routes-list"></div>
+</div>
+
+<!-- RIGHT TOOLS -->
+<div id="right-tools">
+  <button class="edge-tool tram" id="tram-tool-btn" aria-label="Open Hong Kong Tram map">
+    <span class="edge-tool-main">TRAM</span>
+    <span class="edge-tool-sub">Ding Ding</span>
+  </button>
+  <button class="edge-tool slot" id="slot-tool-btn" aria-label="Open second tool slot">
+    <span class="edge-tool-main">CUSTOM</span>
+    <span class="edge-tool-sub">Saved Trips</span>
+  </button>
+</div>
+
+<!-- TRAM PANEL -->
+<aside id="tram-panel" class="side-sheet" aria-hidden="true">
+  <div class="side-sheet-header">
+    <div>
+      <div class="side-sheet-title">HONG KONG TRAMWAYS</div>
+      <div class="side-sheet-sub" id="tram-status-text"></div>
+    </div>
+    <button class="side-sheet-close" id="tram-panel-close" aria-label="Close tram panel">✕</button>
+  </div>
+  <div class="side-sheet-body tram-side-body" id="tram-side-body">
+    <div class="tram-banner hidden" id="tram-service-banner"></div>
+    <div class="tram-map-shell">
+      <svg id="tram-map-svg" viewBox="0 0 1040 2520" preserveAspectRatio="xMidYMid meet" aria-label="Hong Kong Tram route map">
+        <g id="tram-panzoom-layer">
+          <g id="tram-map-layer"></g>
+          <g id="tram-stop-layer"></g>
+          <g id="tram-live-layer"></g>
+        </g>
+      </svg>
+      <div class="tram-hover-card hidden" id="tram-hover-card"></div>
+    </div>
+  </div>
+  <div class="side-sheet-scrollbar" id="tram-scrollbar" aria-hidden="true">
+    <div class="side-sheet-scroll-thumb" id="tram-scroll-thumb"></div>
+  </div>
+</aside>
+
+<!-- RESERVED PANEL -->
+<aside id="slot-panel" class="side-sheet" aria-hidden="true">
+  <div class="side-sheet-header">
+    <div>
+      <div class="side-sheet-title">ROUTE FOLDERS</div>
+      <div class="side-sheet-sub" id="customize-status-text">Save useful route cards for later</div>
+    </div>
+    <button class="side-sheet-close" id="slot-panel-close" aria-label="Close second tool panel">✕</button>
+  </div>
+  <div class="side-sheet-body" id="customize-panel-body">
+    <div class="customize-panel">
+      <div class="customize-section">
+        <div class="customize-section-title">Create Folder</div>
+        <div class="customize-copy">Create one level of folders, then save route cards into them from the results drawer.</div>
+        <div class="customize-row">
+          <input id="folder-name-input" class="customize-input" type="text" placeholder="Folder name, for example Morning commute">
+          <button id="folder-create-btn" class="customize-btn" type="button">Create</button>
+        </div>
+      </div>
+
+      <div class="customize-section">
+        <div class="customize-section-title">Save Current Route</div>
+        <div class="folder-pending hidden" id="folder-pending-box"></div>
+        <div class="customize-copy">Click the small <code>SAVE</code> button on any route card, then choose a folder here.</div>
+      </div>
+
+      <div class="customize-section">
+        <div class="customize-section-title">Folders</div>
+        <div class="folder-list" id="folder-list"></div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- LEAFLET -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.11.0/proj4.js"></script>
+
+<!-- App logic -->
+<script src="assets/js/app.js"></script>
+</body>
+</html>
