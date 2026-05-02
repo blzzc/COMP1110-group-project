@@ -126,7 +126,7 @@ let LINES = [
   { id:'erl',    name:'East Rail Line',    color:'#5eb6e4', system:'hk',
     stations:['hk_sheung_shui','hk_lok_ma_chau'] },
   { id:'twl',    name:'Tsuen Wan Line',    color:'#e60012', system:'hk',
-    stations:['hk_central','hk_tst','hk_jordan','hk_ymt','hk_mong_kok','hk_prince_ed','hk_ssp','hk_csw','hk_lck','hk_mei_foo','hk_lai_king','hk_kwai_fong','hk_kwai_hing','hk_tai_wo_hau','hk_tsuen_wan'] },
+    stations:['hk_central','hk_admiralty','hk_tst','hk_jordan','hk_ymt','hk_mong_kok','hk_prince_ed','hk_ssp','hk_csw','hk_lck','hk_mei_foo','hk_lai_king','hk_kwai_fong','hk_kwai_hing','hk_tai_wo_hau','hk_tsuen_wan'] },
   { id:'isl',    name:'Island Line',       color:'#0860a8', system:'hk',
     stations:['hk_kennedy_town','hk_hku','hk_sai_ying_pun','hk_sheung_wan','hk_central','hk_admiralty','hk_wan_chai','hk_cwb','hk_tin_hau','hk_fortress_hill','hk_north_point','hk_quarry_bay','hk_tai_koo','hk_sai_wan_ho','hk_shau_kei_wan','hk_heng_fa','hk_chai_wan'] },
   { id:'tcl',    name:'Tung Chung Line',   color:'#f5a500', system:'hk',
@@ -2003,9 +2003,9 @@ function buildHsrRouteTitle(option, finalStopName) {
 }
 
 function buildHsrRouteWindowText(route) {
-  if (!Number.isFinite(route?.hsrDepartureTs) || !Number.isFinite(route?.hsrFinalArrivalTs)) return '';
+  if (!Number.isFinite(route?.hsrDepartureTs) || !Number.isFinite(route?.hsrArrivalTs)) return '';
   const prefix = route?.hsrTrainNo ? `${route.hsrTrainNo} ` : '';
-  return `${prefix}${formatClock(route.hsrDepartureTs)} - ${formatClock(route.hsrFinalArrivalTs)}`;
+  return `${prefix}${formatClock(route.hsrDepartureTs)} - ${formatClock(route.hsrArrivalTs)}`;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2092,6 +2092,37 @@ function dedupeCoords(coords) {
     }
   }
   return out;
+}
+
+function simplifyBusDisplayCoords(coords) {
+  const input = dedupeCoords(coords);
+  if (input.length <= 2) return input;
+
+  const filtered = [input[0]];
+  for (let i = 1; i < input.length; i += 1) {
+    const prev = filtered[filtered.length - 1];
+    const current = input[i];
+    if (haversine(prev, current) < 0.045 && i < input.length - 1) continue;
+    filtered.push(current);
+  }
+
+  if (filtered.length <= 2) return filtered;
+
+  const simplified = [filtered[0]];
+  for (let i = 1; i < filtered.length - 1; i += 1) {
+    const a = simplified[simplified.length - 1];
+    const b = filtered[i];
+    const c = filtered[i + 1];
+    const ab = haversine(a, b);
+    const bc = haversine(b, c);
+    const ac = haversine(a, c);
+    const nearLoop = ac < 0.12 && (ab + bc) > ac * 1.8;
+    const tinyZigzag = ab < 0.12 && bc < 0.12 && ac < 0.18;
+    if (nearLoop || tinyZigzag) continue;
+    simplified.push(b);
+  }
+  simplified.push(filtered[filtered.length - 1]);
+  return dedupeCoords(simplified);
 }
 
 function buildStopMap(rows, mapFn) {
@@ -3211,6 +3242,7 @@ function buildBusSegment(pattern, match, system, legIndex, legCount) {
     stopCount: match.stopCount,
     stopInfos: match.stopInfos,
     stopCoords: dedupeCoords(match.stopInfos.map(stop => stop.coords)),
+    pathCoords: simplifyBusDisplayCoords(match.stopInfos.map(stop => stop.coords)),
     rideKm: match.rideKm,
     rideMin: match.rideMin,
     fare: Number.isFinite(patternFare) && patternFare > 0 ? patternFare : busFare(match.rideKm, system),
@@ -3286,6 +3318,7 @@ function buildBusRouteFromPattern(pattern, match, originCoords, destCoords, syst
     busOperator: segment.operator,
     busColor: segment.lineColor,
     busStopCoords: segment.stopCoords,
+    busPathCoords: segment.pathCoords,
     busStopInfos: segment.stopInfos,
     boardStop: segment.boardStop,
     alightStop: segment.alightStop,
@@ -4180,7 +4213,7 @@ async function buildHsrCommuteRoutes(originCoords, destCoords, originSystem, des
       hsrTrainNo: departure.service.trainNo,
       hsrWindowText: buildHsrRouteWindowText({
         hsrDepartureTs,
-        hsrFinalArrivalTs: finalArrivalTs,
+        hsrArrivalTs,
         hsrTrainNo: departure.service.trainNo,
       }),
       realtimeDepartureTs: hsrDepartureTs,
@@ -6046,30 +6079,6 @@ window.App = {
 
     if (route.type === 'bus') {
       hydrateRouteEtas([route]).then(() => renderRouteCards());
-    }
-
-    // Lazily snap bus stop sequences to the road network for cleaner map paths
-    if (route.type === 'bus') {
-      const busSegments = (route.segments || []).filter(seg => seg.mode === 'bus');
-      if (busSegments.length) {
-        for (const segment of busSegments) {
-          if (segment.stopCoords?.length > 1 && !segment.pathCoords) {
-            try {
-              const snapped = await buildRoadPathFromStops(segment.stopCoords);
-              segment.pathCoords = snapped.coords;
-              segment.osrmOk = snapped.ok;
-              if (snapped.km > 0) segment.rideKm = snapped.km;
-            } catch(e) {}
-          }
-        }
-      } else if (route.busStopCoords?.length > 1 && !route.busPathCoords) {
-        try {
-          const snapped = await buildRoadPathFromStops(route.busStopCoords);
-          route.busPathCoords = snapped.coords;
-          route.osrmOk = snapped.ok;
-          if (snapped.km > 0) route.km = snapped.km;
-        } catch(e) {}
-      }
     }
 
     drawRouteOnMap(
