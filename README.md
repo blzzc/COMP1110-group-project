@@ -14,19 +14,21 @@ The project is designed as a visual route advisor with route cards, map display,
 
 ## Features
 
-- Search routes between places in Hong Kong and Shenzhen
-- Compare `fastest`, `cheapest`, and `balanced` options
-- Show metro, bus, taxi, cross-border coach, and HSR routes
-- Display bus route numbers and route segments on cards
-- Draw selected routes on the map
-- Save routes into folders for later review
-- Provide a tram side panel and simplified tram network view
+I. Search routes between places in Hong Kong and Shenzhen
+II. Compare `fastest`, `cheapest`, and `balanced` options
+III. Show metro, bus, taxi, cross-border coach, and HSR routes
+IV. Display bus route numbers and route segments on cards
+V. Draw selected routes on the map
+VI. Save routes into folders for later review
+VII. Provide a tram side panel and simplified tram network view
 
 ## Run Locally
 
-Do **not** open `index.html` directly by double-clicking it.
+I think running through the github pages is better but locally is fine though😊
 
-This project uses external CSS/JS files and live API requests, so it should be served through a small local server.
+Do **not** open `index.html` directly by double-clicking it!
+
+This project uses external CSS/JS files and live API requests, so should construct a small local server first.
 
 ### Option 1: Python
 
@@ -66,4 +68,7 @@ route-planner/
 
 ## Authors
 
-COMP1110 group project.
+Max Zeng Jingda
+Jack See Chun Lui
+Cami Qi Yifei
+Shawn Xiao Zhiping
